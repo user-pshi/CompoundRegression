@@ -1,6 +1,6 @@
 
 //******************************************************************************************
-// TestHDdep.cpp: Simulate claims for the d=5000 (high deductible) case for the dependence model.
+// TestHDdep.cpp: Simulate claims for the d=5000 (high deductible) case for the Gaussian model.
 //******************************************************************************************
   
 #include <iostream>
@@ -180,9 +180,9 @@ double obj1dep(double y3, void *params) {
   //vinecopulib::Bicop cop_model_DN(vinecopulib::BicopFamily::student, 0, copDNparam);
   //vinecopulib::Bicop cop_model_RY(vinecopulib::BicopFamily::frank, 0, copRYparam.head(1));
   //vinecopulib::Bicop cop_model_NY(vinecopulib::BicopFamily::gumbel, 90, -copNYparam.head(1));
-  vinecopulib::Bicop cop_model_DN(vinecopulib::BicopFamily::student, 0, copDNparam);
-  vinecopulib::Bicop cop_model_RY(vinecopulib::BicopFamily::frank, 0, copRYparam.head(1));
-  vinecopulib::Bicop cop_model_NY(vinecopulib::BicopFamily::gumbel, 90, -copNYparam.head(1));
+  vinecopulib::Bicop cop_model_DN(vinecopulib::BicopFamily::gaussian, copDNparam(0));
+  vinecopulib::Bicop cop_model_RY(vinecopulib::BicopFamily::gaussian, copRYparam(0));
+  vinecopulib::Bicop cop_model_NY(vinecopulib::BicopFamily::gaussian, copNYparam(0));
   
   // frequency|deductible
   utemp(0,0) = pGB2(y1,mu1,sigma1,alpha11,alpha21); utemp(0,1) = Fcount(y2dep,pzero,pone,meannb,size);   VectorXd tempvec = cop_model_DN.hfunc1(utemp); double u1 = tempvec(0);
@@ -262,7 +262,7 @@ double obj1ind(double y3, void *params) {
 
 
 VectorXd SimPolicy(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, VectorXd gam2, VectorXd gam3,
-                   VectorXd copDN, VectorXd copDS, VectorXd copDScind, double coverage) {
+                   VectorXd copDN, VectorXd copDS, VectorXd copDScind, double coverage, VectorXd copGaussian) {
   
   // cout << "Simulating a policyholder with parameters: " << y1 << endl;
   
@@ -330,6 +330,14 @@ VectorXd SimPolicy(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, Vect
   double alpha13ind = gam3(k+1);
   double alpha23ind = gam3(k+2);
   
+  double mu3gaussian = cova.dot(copGaussian.head(k));
+  double sigma3gaussian = copGaussian(k);
+  double alpha13gaussian = copGaussian(k+1);
+  double alpha23gaussian = copGaussian(k+2);
+  double copDNgaussian = copGaussian(k+3);
+  double rho1gaussian = copGaussian(k+4);
+  double rho2gaussian = copGaussian(k+5);
+  
   // std::default_random_engine generator(time(0));
   // std::uniform_real_distribution<double> uni_dist(0.0,1.0);
   std::uniform_real_distribution<double> uni_dist(0.0,1.0);
@@ -337,7 +345,7 @@ VectorXd SimPolicy(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, Vect
   std::default_random_engine generator(rd());
   
   // cout << "copDN.tail(2): " << copDN.tail(2) << endl;
-  vinecopulib::Bicop cop_model_DN(vinecopulib::BicopFamily::student, 0, copDN.tail(2));
+  vinecopulib::Bicop cop_model_DN(vinecopulib::BicopFamily::gaussian, copDNgaussian);
   // Matrix<double, 1, 1> tt; tt << 0.4;
   // vinecopulib::Bicop cop_model_DN(vinecopulib::BicopFamily::gaussian, 0, tt);
   
@@ -386,9 +394,9 @@ VectorXd SimPolicy(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, Vect
     // cout << "uR: " << uR << ", uYind: " << uYind << ", uYdep: " << uYdep << ", y2dep: " << y2dep << endl;
     if (y2dep>0) {
     
-    // Figure out the maximum of the uniform distribution that we can accomodate.
+    // Figure out the maximum of the uniform distribution that we can accommodate.
     // paramsdep = {0, mu1, sigma1, alpha11, alpha21, copDN(1), copDN(2), y1, y2dep, pzero, pone, meannb, size, mu3dep, sigma3dep, alpha13dep, alpha23dep, 1, df1, -1, df2}; 
-    paramsdep = {0, mu1, sigma1, alpha11, alpha21, copDN(1), copDN(2), y1, y2dep, pzero, pone, meannb, size, mu3dep, sigma3dep, alpha13dep, alpha23dep, rhoRY, df1, thetaNY, df2}; 
+    paramsdep = {0, mu1, sigma1, alpha11, alpha21, copDNgaussian, copDN(2), y1, y2dep, pzero, pone, meannb, size, mu3gaussian, sigma3gaussian, alpha13gaussian, alpha23gaussian, rho1gaussian, df1, rho2gaussian, df2}; 
     F.function = &obj1dep;
     F.params = &paramsdep;
     double MaxU = F.function(coverage*1000000,&paramsdep);
@@ -399,7 +407,7 @@ VectorXd SimPolicy(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, Vect
     x_lo = 0.0;
     x_hi = LARGENUMBER;
     // paramsdep = {buff(0,j), mu1, sigma1, alpha11, alpha21, copDN(1), copDN(2), y1, y2dep, pzero, pone, meannb, size, mu3dep, sigma3dep, alpha13dep, alpha23dep, 1, df1, -1, df2};
-    paramsdep = {buff(0,j), mu1, sigma1, alpha11, alpha21, copDN(1), copDN(2), y1, y2dep, pzero, pone, meannb, size, mu3dep, sigma3dep, alpha13dep, alpha23dep, rhoRY, df1, thetaNY, df2};
+    paramsdep = {buff(0,j), mu1, sigma1, alpha11, alpha21, copDNgaussian, copDN(2), y1, y2dep, pzero, pone, meannb, size,  mu3gaussian, sigma3gaussian, alpha13gaussian, alpha23gaussian, rho1gaussian, df1, rho2gaussian, df2};
     F.function = &obj1dep;
     F.params = &paramsdep;
     T = gsl_root_fsolver_brent;
@@ -430,9 +438,9 @@ VectorXd SimPolicy(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, Vect
     for (int j=0; j<y2dep; j++) {
     if (y3(b,j)>coverage*1000000)
     pureprem_dep(b) = pureprem_dep(b) + coverage*1000000; // (Error fixed) This was the error. We should multiply 1000,000 to the coverage.
-      else {
-        pureprem_dep(b) = pureprem_dep(b) + y3(b,j);
-      }
+    else {
+    pureprem_dep(b) = pureprem_dep(b) + y3(b,j);
+    }
     }
     
     // Frequencies.
@@ -458,7 +466,7 @@ VectorXd SimPolicy(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, Vect
   
   
   
-VectorXd SimPolicyInd(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, VectorXd gam2, VectorXd gam3,
+  VectorXd SimPolicyInd(double y1, VectorXd cova, VectorXd cova1, VectorXd gam1, VectorXd gam2, VectorXd gam3,
   VectorXd copDN, VectorXd copDS, VectorXd copDScind, double coverage) {
   
   // Variables related to the solver.
@@ -652,7 +660,7 @@ int main() {
   
   MatrixXd temp, cova, cova1;
   MatrixXi tempInt;
-  VectorXd y1, gam1, gam2, gam3, copDN, copDS, copDScind, coverage;
+  VectorXd y1, gam1, gam2, gam3, copDN, copDS, copDScind, coverage, copGaussian;
   VectorXi policynum;
   temp = readMatrix("dat/dat_y1.txt"); y1 = temp.col(0);
   temp = readMatrix("dat/dat_coverage.txt"); coverage = temp.col(0);
@@ -662,6 +670,7 @@ int main() {
   temp = readMatrix("dat/dat_copDN.txt"); copDN = temp.col(0);
   temp = readMatrix("dat/dat_copDS.txt"); copDS = temp.col(0);
   temp = readMatrix("dat/dat_copDScind.txt"); copDScind = temp.col(0);
+  temp = readMatrix("dat/dat_copGaussian.txt"); copGaussian = temp.col(0);
   cova = readMatrix("dat/dat_cova.txt");
   cova1 = readMatrix("dat/dat_cova1.txt");
   tempInt = readMatrixInt("dat/dat_policynum.txt"); policynum = tempInt.col(0);
@@ -681,7 +690,7 @@ int main() {
       covatemp(0)=1;  covatemp(1)=1;  covatemp(2)=0;  covatemp(3)=0;  covatemp(4)=0;  covatemp(5)=0; covatemp(6)=(cova.row(442))(6);
       cova1temp(0)=1; cova1temp(1)=1; cova1temp(2)=0; cova1temp(3)=0; cova1temp(4)=0; cova1temp(5)=0;
       
-      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442));
+      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442), copGaussian);
       std::string filenamei_dep = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       std::string filenamei_dep_freq = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       filenamei_dep = "simoutput_dep/" + filenamei_dep;
@@ -710,7 +719,7 @@ int main() {
       covatemp(0)=1;  covatemp(1)=0;  covatemp(2)=1;  covatemp(3)=0;  covatemp(4)=0;  covatemp(5)=0; covatemp(6)=(cova.row(442))(6);
       cova1temp(0)=1; cova1temp(1)=0; cova1temp(2)=1; cova1temp(3)=0; cova1temp(4)=0; cova1temp(5)=0;
       
-      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442));
+      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442), copGaussian);
       std::string filenamei_dep = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       std::string filenamei_dep_freq = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       filenamei_dep = "simoutput_dep/" + filenamei_dep;
@@ -738,7 +747,7 @@ int main() {
       covatemp(0)=1;  covatemp(1)=0;  covatemp(2)=0;  covatemp(3)=1;  covatemp(4)=0;  covatemp(5)=0; covatemp(6)=(cova.row(442))(6);
       cova1temp(0)=1; cova1temp(1)=0; cova1temp(2)=0; cova1temp(3)=1; cova1temp(4)=0; cova1temp(5)=0;
       
-      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442));
+      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442), copGaussian);
       std::string filenamei_dep = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       std::string filenamei_dep_freq = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       filenamei_dep = "simoutput_dep/" + filenamei_dep;
@@ -767,7 +776,7 @@ int main() {
       covatemp(0)=1;  covatemp(1)=0;  covatemp(2)=0;  covatemp(3)=0;  covatemp(4)=1;  covatemp(5)=0; covatemp(6)=(cova.row(442))(6);
       cova1temp(0)=1; cova1temp(1)=0; cova1temp(2)=0; cova1temp(3)=0; cova1temp(4)=1; cova1temp(5)=0;
       
-      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442));
+      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442), copGaussian);
       std::string filenamei_dep = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       std::string filenamei_dep_freq = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       filenamei_dep = "simoutput_dep/" + filenamei_dep;
@@ -796,7 +805,7 @@ int main() {
       covatemp(0)=1;  covatemp(1)=0;  covatemp(2)=0;  covatemp(3)=0;  covatemp(4)=0;  covatemp(5)=1; covatemp(6)=(cova.row(442))(6);
       cova1temp(0)=1; cova1temp(1)=0; cova1temp(2)=0; cova1temp(3)=0; cova1temp(4)=0; cova1temp(5)=1;
       
-      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442));
+      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442), copGaussian);
       std::string filenamei_dep = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       std::string filenamei_dep_freq = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       filenamei_dep = "simoutput_dep/" + filenamei_dep;
@@ -825,7 +834,7 @@ int main() {
       covatemp(0)=1;  covatemp(1)=0;  covatemp(2)=0;  covatemp(3)=0;  covatemp(4)=0;  covatemp(5)=0; covatemp(6)=(cova.row(442))(6);
       cova1temp(0)=1; cova1temp(1)=0; cova1temp(2)=0; cova1temp(3)=0; cova1temp(4)=0; cova1temp(5)=0;
       
-      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442));
+      SimDep = SimPolicy(5000/coverage(442), covatemp, cova1temp, gam1, gam2, gam3, copDN, copDS, copDScind, coverage(442), copGaussian);
       std::string filenamei_dep = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       std::string filenamei_dep_freq = std::to_string(rep+1) + "_" + std::to_string(iter+1) + ".txt";
       filenamei_dep = "simoutput_dep/" + filenamei_dep;
