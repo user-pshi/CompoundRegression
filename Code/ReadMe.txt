@@ -34,7 +34,7 @@ Rds2Txt.R: convert data in Rds to Txt which are used by the C++ routines.
 
 II. C++ codes: prediction and simulation
 
-Note: In general, the C++ codes can be compiled on a Unix-like system using commands such as: <Compiler Name> <File Name> -o <Output File Name> -std=c++11 -I<Include Directory> -L<Library Directory> -lgsl For example, to compile main_ind_int.cpp on a MacOS Big Sur console, I had to type: c++ main_ind_int.cpp -o main_ind_int -std=c++11 -I/usr/local/include -L/usr/local/lib -lgsl (Please suppress warning messages if your compiler gives minor warnings during the compilation.)
+Note: In general, the C++ codes can be compiled on a Unix-like system using commands such as: <Compiler Name> <File Name> -o <Output File Name> -std=c++11 -I<Include Directory> -L<Library Directory> -lgsl For example, to compile main_ind_int.cpp on a MacOS Big Sur console, we had to type: c++ main_ind_int.cpp -o main_ind_int -std=c++11 -I/usr/local/include -L/usr/local/lib -lgsl (Please suppress warning messages if your compiler gives minor warnings during the compilation.)
 
 main_dep_int.cpp: predict aggregate claims using numerical integration approach for the dependence model (generate output "mean_dep_int.txt")
 main_ind_int.cpp: predict aggregate claims using numerical integration approach for the independence model (generate output "mean_ind_int.txt")

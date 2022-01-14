@@ -6,12 +6,12 @@
 # Note:
 # The output from C++ codes (TestHDdep.cpp, TestHDind.cpp, TestLDdep.cpp, TestLDind.cpp) are too large to store.
 # We save the workspace "Application.RData" for replication purposes
-# Readers should skip to line 71 to generate Table 6
+# Readers should skip to line 75 to generate Table 6
 # Interested readers should run C++ codes to generate outputs that are required to generate the workspace
 #################################################################################################################
 
-rm(list=ls())
-load("Application.RData")
+#rm(list=ls())
+#load("Application.RData")
 
 
 ################################################################################################################################################################################
@@ -64,9 +64,12 @@ LDRatDep <- CTEDepLD/(CTEDepHD+CTEDepLD)
 LDRatInd <- CTEIndLD/(CTEIndHD+CTEIndLD)
 
 # Save the workspace.
-# save.image("Application.RData")
+rm(M_dep_all)
+rm(M_ind_all)
+#save.image("Application.RData")
 #################################################################################
 ##################################################################################
+
 
 
 # Generate Table 6 (in thousand dollars)
